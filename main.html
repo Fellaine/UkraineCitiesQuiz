@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ukraine Cities Quiz</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            background-color: #f0f0f0; /* Light grey background for the page */
+        }
+        #mapContainer { 
+            position: relative; 
+            width: 80%; 
+            max-width: 900px; /* Max width for the map container */
+            margin-top: 15px;
+        }
+        #map { 
+            height: 600px; 
+            width: 100%; 
+            border: 1px solid #ccc; 
+        }
+        .quiz-container { 
+            text-align: center; 
+            margin-bottom: 15px; 
+            width: 80%;
+            max-width: 900px;
+            background-color: #fff; /* White background for the quiz controls */
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .quiz-container h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 24px;
+            color: #333;
+        }
+        .quiz-container input[type="text"] { 
+            width: 300px; 
+            padding: 10px; 
+            font-size: 16px; 
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            box-sizing: border-box; /* Ensures padding doesn't expand width */
+        }
+        .quiz-container p { 
+            margin-bottom: 0;
+            font-size: 16px;
+            color: #555;
+        }
+        
+        #mapControls {
+            position: absolute;
+            bottom: 20px;
+            right: 10px;
+            z-index: 1000; /* Ensure controls are above map tiles */
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .map-control-button {
+            background-color: white;
+            border: 2px solid rgba(0,0,0,0.2);
+            border-radius: 4px;
+            width: 34px; 
+            height: 34px;
+            line-height: 30px; 
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .map-control-button:hover {
+            background-color: #f4f4f4;
+        }
+        #customReset.map-control-button {
+            font-size: 11px; 
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <h2>How many Ukrainian cities can you name?</h2>
+    <input type="text" id="cityInput" placeholder="Try Kyiv or Lviv">
+    <p>Guessed: <span id="guessedCount">0</span> / <span id="totalCount">0</span> cities</p>
+</div>
+
+<div id="mapContainer">
+    <div id="map"></div>
+    <div id="mapControls">
+        <button id="customZoomIn" class="map-control-button">+</button>
+        <button id="customReset" class="map-control-button">RESET</button>
+        <button id="customZoomOut" class="map-control-button">-</button>
+    </div>
+</div>
+
+<script>
+    let map;
+    let citiesData = [];
+    let guessedCityNames = new Set();
+    const guessedMarkers = [];
+    const initialBorderColor = '1px solid #ccc'; // Store initial border style
+
+    function initMap() {
+        map = L.map('map', {
+            zoomControl: false 
+        }).setView([48.3794, 31.1656], 6); 
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+	        maxZoom: 20
+        }).addTo(map);
+
+        document.getElementById('customZoomIn').addEventListener('click', () => map.zoomIn());
+        document.getElementById('customZoomOut').addEventListener('click', () => map.zoomOut());
+        document.getElementById('customReset').addEventListener('click', resetQuiz);
+    }
+
+    async function loadCityData() {
+        try {
+            const response = await fetch('UkraineCities.json');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            
+            citiesData = data.features.map(feature => {
+                const props = feature.properties;
+                const coords = feature.geometry.coordinates; 
+                
+                let ukName = props['name:uk'] || props.name;
+
+                if (typeof ukName === 'string') {
+                    ukName = ukName.trim();
+                } else {
+                    console.warn('City name missing or invalid for feature:', feature);
+                    return null; 
+                }
+
+                if (!coords || coords.length !== 2 || typeof coords[0] !== 'number' || typeof coords[1] !== 'number') {
+                    console.warn('Invalid coordinates for city:', ukName, feature);
+                    return null;
+                }
+                
+                return {
+                    name: ukName,
+                    displayName: ukName, 
+                    lat: coords[1], 
+                    lng: coords[0]
+                };
+            }).filter(city => city !== null); 
+
+            document.getElementById('totalCount').textContent = citiesData.length;
+            updateGuessedCount(); 
+
+        } catch (error) {
+            console.error("Could not load city data:", error);
+            alert("Error loading city data. Please check the console and ensure UkraineCities.json is in the same directory.");
+        }
+    }
+
+    function handleInput(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const inputField = document.getElementById('cityInput');
+            const cityNameInput = inputField.value.trim(); 
+            const cityNameInputLower = cityNameInput.toLowerCase();
+
+            if (cityNameInput === '') return;
+
+            const city = citiesData.find(c => c.name.toLowerCase() === cityNameInputLower);
+
+            if (city && !guessedCityNames.has(city.name.toLowerCase())) {
+                guessedCityNames.add(city.name.toLowerCase());
+                
+                const marker = L.circleMarker([city.lat, city.lng], {
+                    radius: 5,
+                    fillColor: "#3388ff", 
+                    color: "#003366", 
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.7
+                }).addTo(map);
+                marker.bindTooltip(city.displayName);
+                guessedMarkers.push(marker);
+
+                inputField.value = '';
+                inputField.style.border = initialBorderColor; // Reset border on correct guess
+                updateGuessedCount();
+
+                if (guessedCityNames.size === citiesData.length) {
+                    alert("Congratulations! You've named all the cities!");
+                }
+            } else if (city && guessedCityNames.has(city.name.toLowerCase())) {
+                // City already guessed
+                inputField.select(); 
+            } else {
+                // City not found
+                inputField.style.border = '1px solid red';
+                inputField.value = ''; // Clear the input box
+                setTimeout(() => {
+                    inputField.style.border = initialBorderColor; 
+                }, 500); 
+            }
+        }
+    }
+
+    function updateGuessedCount() {
+        document.getElementById('guessedCount').textContent = guessedCityNames.size;
+    }
+
+    function resetQuiz() {
+        guessedCityNames.clear();
+        guessedMarkers.forEach(marker => map.removeLayer(marker));
+        guessedMarkers.length = 0; 
+        const inputField = document.getElementById('cityInput');
+        inputField.value = '';
+        inputField.style.border = initialBorderColor; // Reset border on quiz reset
+        updateGuessedCount();
+        map.setView([48.3794, 31.1656], 6); 
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initMap();
+        loadCityData().then(() => {
+            // Store initial border style after data is loaded and DOM is stable
+            const cityInput = document.getElementById('cityInput');
+            if (cityInput) {
+                 // initialBorderColor is already set as a const
+            }
+        });
+
+
+        const cityInput = document.getElementById('cityInput');
+        cityInput.addEventListener('keypress', handleInput);
+    });
+</script>
+
+</body>
+</html>
