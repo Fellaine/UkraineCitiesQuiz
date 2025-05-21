@@ -19,12 +19,12 @@
             flex-direction: column;
             align-items: center;
             padding-top: 20px;
-            background-color: #f0f0f0; /* Light grey background for the page */
+            background-color: #f0f0f0; 
         }
         #mapContainer { 
             position: relative; 
             width: 80%; 
-            max-width: 900px; /* Max width for the map container */
+            max-width: 900px; 
             margin-top: 15px;
         }
         #map { 
@@ -37,16 +37,24 @@
             margin-bottom: 15px; 
             width: 80%;
             max-width: 900px;
-            background-color: #fff; /* White background for the quiz controls */
+            background-color: #fff; 
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center; 
         }
         .quiz-container h2 {
-            margin-top: 0;
-            margin-bottom: 15px;
             font-size: 24px;
             color: #333;
+            margin-bottom: 15px;
+        }
+        .quiz-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
         }
         .quiz-container input[type="text"] { 
             width: 300px; 
@@ -54,20 +62,19 @@
             font-size: 16px; 
             border: 1px solid #ccc;
             border-radius: 4px;
-            margin-bottom: 10px;
-            box-sizing: border-box; /* Ensures padding doesn't expand width */
+            box-sizing: border-box; 
         }
         .quiz-container p { 
-            margin-bottom: 0;
             font-size: 16px;
             color: #555;
+            margin-top: 10px;
         }
         
         #mapControls {
             position: absolute;
             bottom: 20px;
             right: 10px;
-            z-index: 1000; /* Ensure controls are above map tiles */
+            z-index: 1000; 
             display: flex;
             flex-direction: column;
             gap: 5px;
@@ -92,25 +99,37 @@
         .map-control-button:hover {
             background-color: #f4f4f4;
         }
-        #customReset.map-control-button {
-            font-size: 11px; 
-            font-weight: bold;
+        #customResetButton {
+            padding: 10px 15px;
+            font-size: 16px;
+            background-color: #fff; 
+            color: #333;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
         }
+        #customResetButton:hover {
+            background-color: #e0e0e0;
+        }
+
     </style>
 </head>
 <body>
 
 <div class="quiz-container">
     <h2>How many Ukrainian cities can you name?</h2>
-    <input type="text" id="cityInput" placeholder="Try Kyiv or Lviv">
+    <div class="quiz-controls">
+        <input type="text" id="cityInput" placeholder="Try Kyiv or Lviv">
+        <button id="customResetButton">Reset</button>
+    </div>
     <p>Guessed: <span id="guessedCount">0</span> / <span id="totalCount">0</span> cities</p>
 </div>
+
 
 <div id="mapContainer">
     <div id="map"></div>
     <div id="mapControls">
         <button id="customZoomIn" class="map-control-button">+</button>
-        <button id="customReset" class="map-control-button">RESET</button>
         <button id="customZoomOut" class="map-control-button">-</button>
     </div>
 </div>
@@ -120,12 +139,12 @@
     let citiesData = [];
     let guessedCityNames = new Set();
     const guessedMarkers = [];
-    const initialBorderColor = '1px solid #ccc'; // Store initial border style
+    const initialBorderColor = '1px solid #ccc'; 
 
     function initMap() {
         map = L.map('map', {
             zoomControl: false 
-        }).setView([48.3794, 31.1656], 6); 
+        }).setView([49.7518491,31.468215], 6); 
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -135,7 +154,7 @@
 
         document.getElementById('customZoomIn').addEventListener('click', () => map.zoomIn());
         document.getElementById('customZoomOut').addEventListener('click', () => map.zoomOut());
-        document.getElementById('customReset').addEventListener('click', resetQuiz);
+        document.getElementById('customResetButton').addEventListener('click', resetQuiz); 
     }
 
     async function loadCityData() {
@@ -207,22 +226,17 @@
                 guessedMarkers.push(marker);
 
                 inputField.value = '';
-                inputField.style.border = initialBorderColor; // Reset border on correct guess
+                inputField.style.border = initialBorderColor; 
                 updateGuessedCount();
 
                 if (guessedCityNames.size === citiesData.length) {
                     alert("Congratulations! You've named all the cities!");
                 }
             } else if (city && guessedCityNames.has(city.name.toLowerCase())) {
-                // City already guessed
+                inputField.value = ''; 
                 inputField.select(); 
             } else {
-                // City not found
-                inputField.style.border = '1px solid red';
-                inputField.value = ''; // Clear the input box
-                setTimeout(() => {
-                    inputField.style.border = initialBorderColor; 
-                }, 500); 
+                inputField.value = ''; 
             }
         }
     }
@@ -237,21 +251,14 @@
         guessedMarkers.length = 0; 
         const inputField = document.getElementById('cityInput');
         inputField.value = '';
-        inputField.style.border = initialBorderColor; // Reset border on quiz reset
+        inputField.style.border = initialBorderColor; 
         updateGuessedCount();
-        map.setView([48.3794, 31.1656], 6); 
+        map.setView([49.7518491,31.468215], 15); 
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         initMap();
-        loadCityData().then(() => {
-            // Store initial border style after data is loaded and DOM is stable
-            const cityInput = document.getElementById('cityInput');
-            if (cityInput) {
-                 // initialBorderColor is already set as a const
-            }
-        });
-
+        loadCityData();
 
         const cityInput = document.getElementById('cityInput');
         cityInput.addEventListener('keypress', handleInput);
