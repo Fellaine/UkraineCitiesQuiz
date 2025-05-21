@@ -23,41 +23,45 @@
         }
         #mapContainer { 
             position: relative; 
-            width: 80%; 
+            width: 90%;
             max-width: 900px; 
             margin-top: 15px;
         }
         #map { 
-            height: 600px; 
+            height: 50vh;
+            min-height: 400px;
             width: 100%; 
             border: 1px solid #ccc; 
         }
         .quiz-container { 
             text-align: center; 
             margin-bottom: 15px; 
-            width: 80%;
+            width: 90%;
             max-width: 900px;
             background-color: #fff; 
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex;
-            flex-direction: column;
+            flex-direction: column; 
             align-items: center; 
         }
         .quiz-container h2 {
-            font-size: 24px;
+            font-size: 20px;
             color: #333;
-            margin-bottom: 15px;
+            margin-bottom: 10px; 
         }
-        .quiz-controls {
+        .quiz-controls { 
             display: flex;
+            flex-direction: column;
             align-items: center;
             gap: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 10px; 
+            width: 100%;
         }
         .quiz-container input[type="text"] { 
-            width: 300px; 
+            width: 100%;
+            max-width: 300px;
             padding: 10px; 
             font-size: 16px; 
             border: 1px solid #ccc;
@@ -67,12 +71,12 @@
         .quiz-container p { 
             font-size: 16px;
             color: #555;
-            margin-top: 10px;
+            margin-top: 10px; 
         }
         
         #mapControls {
             position: absolute;
-            bottom: 20px;
+            bottom: 10px;
             right: 10px;
             z-index: 1000; 
             display: flex;
@@ -83,11 +87,11 @@
             background-color: white;
             border: 2px solid rgba(0,0,0,0.2);
             border-radius: 4px;
-            width: 34px; 
-            height: 34px;
-            line-height: 30px; 
+            width: 30px;
+            height: 30px;
+            line-height: 26px; 
             text-align: center;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 1px 5px rgba(0,0,0,0.65);
@@ -99,17 +103,38 @@
         .map-control-button:hover {
             background-color: #f4f4f4;
         }
-        #customResetButton {
+        #customResetButton { 
             padding: 10px 15px;
             font-size: 16px;
             background-color: #fff; 
-            color: #333;
-            border: 1px solid #ccc;
+            color: #333; 
+            border: 1px solid #ccc; 
             border-radius: 4px;
             cursor: pointer;
+            width: 100%;
+            max-width: 300px;
+            box-sizing: border-box;
         }
         #customResetButton:hover {
-            background-color: #e0e0e0;
+            background-color: #e0e0e0; 
+        }
+
+        @media (min-width: 600px) {
+            .quiz-controls {
+                flex-direction: row;
+            }
+            .quiz-container input[type="text"] {
+                width: 300px;
+            }
+            #customResetButton {
+                width: auto;
+            }
+            #map {
+                height: 600px;
+            }
+            .quiz-container h2 {
+                font-size: 24px;
+            }
         }
 
     </style>
@@ -119,7 +144,7 @@
 <div class="quiz-container">
     <h2>How many Ukrainian cities can you name?</h2>
     <div class="quiz-controls">
-        <input type="text" id="cityInput" placeholder="Try Київ or Львів">
+        <input type="text" id="cityInput" placeholder="Try Канів or Київ">
         <button id="customResetButton">Reset</button>
     </div>
     <p>Guessed: <span id="guessedCount">0</span> / <span id="totalCount">0</span> cities</p>
@@ -196,7 +221,7 @@
 
         } catch (error) {
             console.error("Could not load city data:", error);
-            alert("Error loading city data. Please check the console and ensure UkraineCities.json is in the same directory.");
+            alert("Error loading city data");
         }
     }
 
