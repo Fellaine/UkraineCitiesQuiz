@@ -230,7 +230,7 @@
         if (event.key === 'Enter') {
             event.preventDefault();
             const inputField = document.getElementById('cityInput');
-            const cityNameInput = inputField.value.trim(); 
+            const cityNameInput = inputField.value.trim().replace(/'/g, "’");;
             const cityNameInputLower = cityNameInput.toLowerCase();
 
             if (cityNameInput === '') return;
